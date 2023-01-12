@@ -343,13 +343,15 @@ Definition sel_switch_long :=
 Inductive stmt_class : Type :=
   | SCskip
   | SCassign (id: ident) (a: Cminor.expr)
-  | SCother.
+  | SCother
+  | SCreturn (a: Cminor.expr).
 
 Fixpoint classify_stmt (s: Cminor.stmt) : stmt_class :=
   match s with
   | Cminor.Sskip => SCskip
   | Cminor.Sassign id a => SCassign id a
   | Cminor.Sbuiltin None (EF_debug _ _ _) _ => SCskip
+  | Cminor.Sreturn (Some a) => SCreturn a
   | Cminor.Sseq s1 s2 =>
       match classify_stmt s1, classify_stmt s2 with
       | SCskip, c2 => c2
@@ -378,8 +380,18 @@ Definition if_conversion_base
          (sel_select_opt ty cond ifso ifnot)
   else None.
 
+Definition if_conversion_return
+      (ki: known_idents) (ty: typ)
+      (cond: Cminor.expr) (ifso ifnot:  Cminor.expr) : option stmt :=
+  if safe_expr ki ifso && safe_expr ki ifso
+  && if_conversion_heuristic cond ifso ifnot ty 
+  then option_map 
+            (fun sel => Sreturn (Some sel))
+            (sel_select_opt ty cond ifso ifnot)
+  else None.
+
 Definition if_conversion
-      (ki: known_idents) (env: typenv)
+      (ki: known_idents) (ty: typ) (env: typenv)
       (cond: Cminor.expr) (ifso ifnot: Cminor.stmt) : option stmt :=
   match classify_stmt ifso, classify_stmt ifnot with
   | SCskip, SCassign id a =>
@@ -388,12 +400,14 @@ Definition if_conversion
       if_conversion_base ki env cond id a (Cminor.Evar id)
   | SCassign id1 a1, SCassign id2 a2 =>
       if ident_eq id1 id2 then if_conversion_base ki env cond id1 a1 a2 else None
+  | SCreturn a1, SCreturn a2 => 
+      if_conversion_return ki ty cond a1 a2
   | _, _ => None
   end.
 
 (** Conversion from Cminor statements to Cminorsel statements. *)
 
-Fixpoint sel_stmt (ki: known_idents) (env: typenv) (s: Cminor.stmt) : res stmt :=
+Fixpoint sel_stmt (ki: known_idents) (env: typenv) (s: Cminor.stmt) (rty: typ) : res stmt :=
   match s with
   | Cminor.Sskip => OK Sskip
   | Cminor.Sassign id e => OK (Sassign id (sel_expr e))
@@ -412,19 +426,19 @@ Fixpoint sel_stmt (ki: known_idents) (env: typenv) (s: Cminor.stmt) : res stmt :
       | _            => Stailcall sg (inl _ (sel_expr fn)) (sel_exprlist args)
       end)
   | Cminor.Sseq s1 s2 =>
-      do s1' <- sel_stmt ki env s1; do s2' <- sel_stmt ki env s2;
+      do s1' <- sel_stmt ki env s1 rty; do s2' <- sel_stmt ki env s2 rty;
       OK (Sseq s1' s2')
   | Cminor.Sifthenelse e ifso ifnot =>
-      match if_conversion ki env e ifso ifnot with
+      match if_conversion ki rty env e ifso ifnot with
       | Some s => OK s
       | None =>
-          do ifso' <- sel_stmt ki env ifso; do ifnot' <- sel_stmt ki env ifnot;
+          do ifso' <- sel_stmt ki env ifso rty; do ifnot' <- sel_stmt ki env ifnot rty;
           OK (Sifthenelse (condexpr_of_expr (sel_expr e)) ifso' ifnot')
       end
   | Cminor.Sloop body =>
-      do body' <- sel_stmt ki env body; OK (Sloop body')
+      do body' <- sel_stmt ki env body rty; OK (Sloop body')
   | Cminor.Sblock body =>
-      do body' <- sel_stmt ki env body; OK (Sblock body')
+      do body' <- sel_stmt ki env body rty; OK (Sblock body')
   | Cminor.Sexit n => OK (Sexit n)
   | Cminor.Sswitch false e cases dfl =>
       let t := compile_switch Int.modulus dfl cases in
@@ -439,7 +453,7 @@ Fixpoint sel_stmt (ki: known_idents) (env: typenv) (s: Cminor.stmt) : res stmt :
   | Cminor.Sreturn None => OK (Sreturn None)
   | Cminor.Sreturn (Some e) => OK (Sreturn (Some (sel_expr e)))
   | Cminor.Slabel lbl body =>
-      do body' <- sel_stmt ki env body; OK (Slabel lbl body')
+      do body' <- sel_stmt ki env body rty; OK (Slabel lbl body')
   | Cminor.Sgoto lbl => OK (Sgoto lbl)
   end.
 
@@ -455,7 +469,8 @@ Definition known_id (f: Cminor.function) : known_idents :=
 Definition sel_function (dm: PTree.t globdef) (hf: helper_functions) (f: Cminor.function) : res function :=
   let ki := known_id f in
   do env <- Cminortyping.type_function f;
-  do body' <- sel_stmt dm ki env f.(Cminor.fn_body);
+  do body' <- sel_stmt dm ki env f.(Cminor.fn_body) 
+                                (proj_sig_res f.(Cminor.fn_sig));
   OK (mkfunction
         f.(Cminor.fn_sig)
         f.(Cminor.fn_params)

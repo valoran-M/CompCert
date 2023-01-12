@@ -622,10 +622,11 @@ Proof.
 Qed.
 
 Lemma make_mullimm_correct:
-  forall n r1,
-  let (op, args) := make_mullimm n r1 in
+  forall n r1 r2,
+  e#r2 = Vlong n ->
+  let (op, args) := make_mullimm n r1 r2 in
   exists v, eval_operation ge (Vptr sp Ptrofs.zero) op e##args m = Some v /\ Val.lessdef (Val.mull e#r1 (Vlong n)) v.
-Proof.
+Proof. 
   intros; unfold make_mullimm.
   predSpec Int64.eq Int64.eq_spec n Int64.zero; intros. subst.
   exists (Vlong Int64.zero); split; auto. destruct (e#r1); simpl; auto. rewrite Int64.mul_zero; auto.
@@ -636,7 +637,9 @@ Proof.
   destruct (e#r1); simpl; auto.
   erewrite Int64.is_power2'_range by eauto.
   erewrite Int64.mul_pow2' by eauto. auto.
+  destruct (short_imm n).
   econstructor; split; eauto. auto.
+  econstructor; split; eauto. simpl. rewrite H. auto.
 Qed.
 
 Lemma make_divlimm_correct:

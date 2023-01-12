@@ -259,6 +259,10 @@ Nondetfunction subl (e1: expr) (e2: expr) :=
       Eop Osubl (e1:::e2:::Enil)
   end.
 
+Definition short_imm (n: int64) := 
+  andb (Int64.lt n (Int64.repr Int.max_signed)) 
+    (negb (Int64.lt n (Int64.repr Int.min_signed))).
+
 Definition mullimm_base (n1: int64) (e2: expr) :=
   match Int64.one_bits' n1 with
   | i :: nil =>
@@ -266,7 +270,10 @@ Definition mullimm_base (n1: int64) (e2: expr) :=
   | i :: j :: nil =>
       Elet e2 (addl (shllimm (Eletvar 0) i) (shllimm (Eletvar 0) j))
   | _ =>
-      Eop (Omullimm n1) (e2:::Enil)
+    if short_imm n1 then
+      Eop (Omullimm n1) (e2 ::: Enil)
+    else
+      Eop Omull (e2 ::: Eop (Olongconst n1) Enil :::Enil)
   end.
 
 Nondetfunction mullimm (n1: int64) (e2: expr) :=
