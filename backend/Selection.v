@@ -37,6 +37,9 @@ Local Open Scope error_monad_scope.
 
 Function condexpr_of_expr (e: expr) : condexpr :=
   match e with
+  | Eop (Ocmp (Ccompuimm c i)) ((Eop Oxor (e1 ::: e2 ::: Enil)) ::: Enil) => 
+      if Int.eq i Int.zero then CEcond (Ccompu c) (e1 ::: e2 ::: Enil)
+                           else CEcond (Ccompuimm c i) ((Eop Oxor (e1 ::: e2 ::: Enil)) ::: Enil)
   | Eop (Ocmp c) el => CEcond c el
   | Econdition a b c => CEcondition a (condexpr_of_expr b) (condexpr_of_expr c)
   | Elet a b => CElet a (condexpr_of_expr b)
