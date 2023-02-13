@@ -369,7 +369,11 @@ Inductive stmt_class : Type :=
 Fixpoint classify_stmt (s: Cminor.stmt) : stmt_class :=
   match s with
   | Cminor.Sskip => SCskip
-  | Cminor.Sassign id a => SCassign id a
+  | Cminor.Sassign id a =>
+      match a with
+      | Cminor.Evar id2 => if ident_eq id id2 then SCskip else SCassign id a
+      | _ =>  SCassign id a
+      end
   | Cminor.Sbuiltin None (EF_debug _ _ _) _ => SCskip
   | Cminor.Sreturn (Some a) => SCreturn a
   | Cminor.Sseq s1 s2 =>
