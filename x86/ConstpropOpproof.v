@@ -626,7 +626,7 @@ Lemma make_mullimm_correct:
   e#r2 = Vlong n ->
   let (op, args) := make_mullimm n r1 r2 in
   exists v, eval_operation ge (Vptr sp Ptrofs.zero) op e##args m = Some v /\ Val.lessdef (Val.mull e#r1 (Vlong n)) v.
-Proof. 
+Proof.
   intros; unfold make_mullimm.
   predSpec Int64.eq Int64.eq_spec n Int64.zero; intros. subst.
   exists (Vlong Int64.zero); split; auto. destruct (e#r1); simpl; auto. rewrite Int64.mul_zero; auto.
