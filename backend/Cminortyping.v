@@ -66,6 +66,14 @@ Definition type_binop (op: binary_operation) : typ * typ * typ :=
   | Ocmpl _ | Ocmplu _ => (Tlong, Tlong, Tint)
   end.
 
+Definition binop_is_condition (op: binary_operation) : bool := 
+  match op with 
+  | Ocmp _  | Ocmpu _ 
+  | Ocmpf _ | Ocmpfs _
+  | Ocmpl _ | Ocmplu _ => true
+  | _ => false
+  end.
+
 Module RTLtypes <: TYPE_ALGEBRA.
 
 Definition t := typ.

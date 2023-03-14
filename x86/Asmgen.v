@@ -192,7 +192,8 @@ Definition transl_cond
       do r1 <- ireg_of a1;
       OK (if Int.eq_dec n Int.zero then Ptestl_rr r1 r1 :: k else Pcmpl_ri r1 n :: k)
   | Ccompuimm c n, a1 :: nil =>
-      do r1 <- ireg_of a1; OK (Pcmpl_ri r1 n :: k)
+      do r1 <- ireg_of a1; (*OK (Pcmpl_ri r1 n :: k)*)
+      OK (if Int.eq_dec n Int.zero then Ptestl_rr r1 r1 :: k else Pcmpl_ri r1 n :: k)
   | Ccompl c, a1 :: a2 :: nil =>
       do r1 <- ireg_of a1; do r2 <- ireg_of a2; OK (Pcmpq_rr r1 r2 :: k)
   | Ccomplu c, a1 :: a2 :: nil =>
@@ -458,8 +459,18 @@ Definition transl_op
       assertion (mreg_eq a1 res);
       do r <- ireg_of res; do r2 <- ireg_of a2; OK (Pshld_ri r r2 n :: k)
   | Olea addr, _ =>
-      do am <- transl_addressing addr args; do r <- ireg_of res;
-      OK (Pleal r (normalize_addrmode_32 am) :: k)
+      do r <- ireg_of res;
+      match addr, args with 
+      | Aindexed n, a1 :: nil => 
+        if Machregs.mreg_eq a1 res then 
+          OK (Paddl_ri r (Int.repr n) :: k)
+        else
+          do am <- transl_addressing addr args; 
+          OK (Pleal r (normalize_addrmode_32 am) :: k)
+      | _, _ => 
+        do am <- transl_addressing addr args;
+        OK (Pleal r (normalize_addrmode_32 am) :: k)
+      end
 (* 64-bit integer operations *)
   | Olowlong, a1 :: nil =>
       assertion (mreg_eq a1 res);

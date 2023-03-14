@@ -370,11 +370,11 @@ Proof.
 Qed.
 
 Theorem eval_mullimm_base: forall n, unary_constructor_sound (mullimm_base n) (fun v => Val.mull v (Vlong n)).
-Proof. (*
+Proof. Admitted. (*
   intros; unfold mullimm_base. red; intros.
   generalize (Int64.one_bits'_decomp n); intros D.
   destruct (Int64.one_bits' n) as [ | i [ | j [ | ? ? ]]] eqn:B.
-- TrivialExists.
+- destruct (short_imm n) eqn:LT. TrivialExists.  
 - replace (Val.mull x (Vlong n)) with (Val.shll x (Vint i)).
   apply eval_shllimm; auto.
   simpl in D. rewrite D, Int64.add_zero. destruct x; simpl; auto.
@@ -394,7 +394,6 @@ Proof. (*
   rewrite Int64.mul_add_distr_r. rewrite <- ! Int64.shl'_mul. auto.
 - TrivialExists.
 Qed.*)
-Admitted.
 
 Theorem eval_mullimm: forall n, unary_constructor_sound (mullimm n) (fun v => Val.mull v (Vlong n)).
 Proof.

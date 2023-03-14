@@ -256,8 +256,8 @@ Qed.
 Theorem eval_shruimm:
   forall n, unary_constructor_sound (fun a => shruimm a n)
                                     (fun x => Val.shru x (Vint n)).
-Proof.
-  (*red; intros until x.  unfold shruimm.
+Proof. Admitted. (*
+  red; intros until x.  unfold shruimm.
   predSpec Int.eq Int.eq_spec n Int.zero.
   intros; subst. exists x; split; auto. destruct x; simpl; auto. rewrite Int.shru_zero; auto.
   destruct (Int.ltu n Int.iwordsize) eqn:LT; simpl.
@@ -272,11 +272,18 @@ Proof.
   rewrite LT. rewrite Int.add_commut. rewrite Int.shru_shru; auto. rewrite Int.add_commut; auto.
 + TrivialExists. econstructor. EvalOp. simpl; eauto. constructor.
   simpl. auto.
+- destruct (Int.ltu (Int.add n n1) Int64.iwordsize') eqn:?.
++ exists (Val.shru v0 (Vint (Int.add n n1))); split. EvalOp. econstructor.  
+  subst. destruct v0; simpl; auto.
+  rewrite Heqb.
+  destruct (Int.ltu n1 Int.iwordsize) eqn:?; simpl; auto.
+  rewrite LT. rewrite Int.add_commut. rewrite Int.shru_shru; auto. rewrite Int.add_commut; auto.
++ TrivialExists. econstructor. EvalOp. simpl; eauto. constructor.
+  simpl. auto.
 - TrivialExists.
 - intros; TrivialExists. constructor. eauto. constructor. EvalOp. simpl; eauto. constructor.
   auto.
 Qed.*)
-Admitted.
 
 Theorem eval_shrimm:
   forall n, unary_constructor_sound (fun a => shrimm a n)

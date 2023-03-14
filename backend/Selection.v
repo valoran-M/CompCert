@@ -35,12 +35,29 @@ Local Open Scope error_monad_scope.
 
 (** Conversion of conditions *)
 
+Definition comp_opt (c : condition) (el : exprlist) : condexpr := 
+  let create_comp (ci : comparison) (i : int) (e1 e2 : expr) 
+                  (cmp : comparison -> condition) : condexpr := 
+    if negb (Int.eq i Int.zero) then CEcond c el 
+    else
+      match ci with 
+      | Ceq | Cne => CEcond (cmp ci) (e1 ::: e2 ::: Enil)
+      | _ =>  CEcond c el
+      end
+  in
+  match el with 
+  | (Eop Oxor (e1 ::: e2 ::: Enil)) ::: Enil =>
+    match c with 
+    | Ccompuimm ci i => create_comp ci i e1 e2 Ccompu
+    | Ccompimm ci i => create_comp ci i e1 e2 Ccomp
+    | _ => CEcond c el
+    end
+  | _ => CEcond c el
+  end.
+
 Function condexpr_of_expr (e: expr) : condexpr :=
   match e with
-  | Eop (Ocmp (Ccompuimm c i)) ((Eop Oxor (e1 ::: e2 ::: Enil)) ::: Enil) => 
-      if Int.eq i Int.zero then CEcond (Ccompu c) (e1 ::: e2 ::: Enil)
-                           else CEcond (Ccompuimm c i) ((Eop Oxor (e1 ::: e2 ::: Enil)) ::: Enil)
-  | Eop (Ocmp c) el => CEcond c el
+  | Eop (Ocmp c) el => comp_opt c el
   | Econdition a b c => CEcondition a (condexpr_of_expr b) (condexpr_of_expr c)
   | Elet a b => CElet a (condexpr_of_expr b)
   | _ => CEcond (Ccompuimm Cne Int.zero) (e ::: Enil)
@@ -371,13 +388,21 @@ Fixpoint classify_stmt (s: Cminor.stmt) : stmt_class :=
 Parameter if_conversion_heuristic:
   Cminor.expr -> Cminor.expr -> Cminor.expr -> AST.typ -> bool.
 
+Definition if_conversion_condition (ifso ifnot: Cminor.expr) : bool := 
+  match ifso, ifnot with 
+  | Cminor.Ebinop op _ _, Cminor.Econst _
+  | Cminor.Econst _, Cminor.Ebinop op _ _ => true (*binop_is_condition op*)
+  | _, _ => true
+  end.
+
 Definition if_conversion_base
       (ki: known_idents) (env: typenv)
       (cond: Cminor.expr) (id: ident) (ifso ifnot:  Cminor.expr) : option stmt :=
   let ty := env id in
   if is_known ki id
-  && safe_expr ki ifso && safe_expr ki ifnot
-  && if_conversion_heuristic cond ifso ifnot ty
+  && safe_expr ki ifso && safe_expr ki ifnot 
+  && if_conversion_heuristic cond ifso ifnot ty 
+  && negb (if_conversion_condition ifso ifnot)
   then option_map
          (fun sel => Sassign id sel)
          (sel_select_opt ty cond ifso ifnot)
@@ -394,7 +419,7 @@ Definition if_conversion_return
   else None.
 
 Definition if_conversion
-      (ki: known_idents) (ty: typ) (env: typenv)
+      (ki: known_idents) (rty: typ) (env: typenv)
       (cond: Cminor.expr) (ifso ifnot: Cminor.stmt) : option stmt :=
   match classify_stmt ifso, classify_stmt ifnot with
   | SCskip, SCassign id a =>
@@ -404,7 +429,7 @@ Definition if_conversion
   | SCassign id1 a1, SCassign id2 a2 =>
       if ident_eq id1 id2 then if_conversion_base ki env cond id1 a1 a2 else None
   | SCreturn a1, SCreturn a2 => 
-      if_conversion_return ki ty cond a1 a2
+      if_conversion_return ki rty cond a1 a2
   | _, _ => None
   end.
 
@@ -428,6 +453,19 @@ Fixpoint sel_stmt (ki: known_idents) (env: typenv) (s: Cminor.stmt) (rty: typ) :
       | Call_imm id  => Stailcall sg (inr _ id) (sel_exprlist args)
       | _            => Stailcall sg (inl _ (sel_expr fn)) (sel_exprlist args)
       end)
+  (*| Cminor.Sseq (Cminor.Sifthenelse e ifso Cminor.Sskip) s2 =>
+      match classify_stmt ifso with 
+      | SCreturn _ => 
+        match if_conversion ki rty env e ifso s2 with
+        | Some s => OK s
+        | None => 
+          do s1' <- sel_stmt ki env ifso rty; do s2' <- sel_stmt ki env s2 rty;
+          OK (Sseq (Sifthenelse (condexpr_of_expr (sel_expr e)) s1' Sskip) s2')
+        end
+      | _ => 
+        do s1' <- sel_stmt ki env ifso rty; do s2' <- sel_stmt ki env s2 rty;
+        OK (Sseq (Sifthenelse (condexpr_of_expr (sel_expr e)) s1' Sskip) s2')
+      end*)
   | Cminor.Sseq s1 s2 =>
       do s1' <- sel_stmt ki env s1 rty; do s2' <- sel_stmt ki env s2 rty;
       OK (Sseq s1' s2')

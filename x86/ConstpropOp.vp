@@ -317,7 +317,6 @@ Definition short_imm (n: int64) :=
   andb (Int64.lt n (Int64.repr Int.max_signed)) 
     (negb (Int64.lt n (Int64.repr Int.min_signed))).
 
-
 Definition make_mullimm (n: int64) (r1 r2: reg) :=
   if Int64.eq n Int64.zero then
     (Olongconst Int64.zero, nil)
@@ -326,10 +325,9 @@ Definition make_mullimm (n: int64) (r1 r2: reg) :=
   else
     match Int64.is_power2' n with
     | Some l => (Oshllimm l, r1 :: nil)
-    | None => if short_imm n then
-                (Omullimm n, r1 :: nil)
-              else
-                (Omull, r1 :: r2 :: nil)
+    | None => if short_imm n 
+              then (Omullimm n, r1 :: nil)
+              else (Omull, r1 :: r2 :: nil)
     end.
 
 Definition make_andlimm (n: int64) (r: reg) (a: aval) :=
