@@ -880,7 +880,7 @@ Transparent destroyed_at_function_entry.
   inv STACKS. simpl in *.
   right. split. lia. split. auto.
   econstructor; eauto. rewrite ATPC; eauto. congruence.
-Qed.
+Qed.*)
 
 Lemma transf_initial_states:
   forall st1, Mach.initial_state prog st1 ->
@@ -902,7 +902,7 @@ Proof.
   rewrite (match_program_main TRANSF).
   rewrite symbols_preserved.
   unfold ge; rewrite H1. auto.
-Qed.*)
+Qed.
 
 Lemma transf_final_states:
   forall st1 st2 r,

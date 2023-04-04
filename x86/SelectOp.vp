@@ -180,7 +180,8 @@ Nondetfunction shruimm (e1: expr) (n: int) :=
         then Eop (Oshruimm (Int.add n n1)) (t1:::Enil)
         else Eop (Oshruimm n) (e1:::Enil)
     | Eop Olowlong (Eop (Oshrluimm n1) (t1:::Enil) ::: Enil) =>
-        if Int.ltu (Int.add n n1) Int64.iwordsize'
+        if andb (Int.ltu (Int.add n n1) Int64.iwordsize')
+                (negb (Int.ltu n1 Int.iwordsize))
         then Eop Olowlong (Eop (Oshrluimm (Int.add n n1)) (t1:::Enil) ::: Enil)
         else Eop (Oshruimm n) (e1:::Enil)
     | _ =>
@@ -235,7 +236,9 @@ Definition mulhs (e1: expr) (e2: expr) := Eop Omulhs (e1 ::: e2 ::: Enil).
 Definition mulhu (e1: expr) (e2: expr) :=
   if Archi.splitlong then Eop Omulhu (e1 ::: e2 ::: Enil)
   else Eop Olowlong (Eop (Oshrluimm (Int.repr 32)) (
-    (Eop Omull (Eop Ocast32unsigned (e1 ::: Enil) ::: Eop Ocast32unsigned (e2 ::: Enil) ::: Enil)) ::: Enil)  ::: Enil).
+    (Eop Omull 
+      (Eop Ocast32unsigned (e1 ::: Enil) ::: 
+       Eop Ocast32unsigned (e2 ::: Enil) ::: Enil)) ::: Enil) ::: Enil).
 
 
 (** ** Bitwise and, or, xor *)

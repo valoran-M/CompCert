@@ -1285,7 +1285,7 @@ Lemma transl_op_correct:
      exec_straight ge fn c rs m k rs' m
   /\ Val.lessdef v rs'#(preg_of res)
   /\ forall r, data_preg r = true -> r <> preg_of res -> preg_notin r (destroyed_by_op op) -> rs' r = rs r.
-Proof. Admitted. (*
+Proof.
 Transparent destroyed_by_op.
   intros until v; intros TR EV.
   assert (SAME:
@@ -1371,10 +1371,13 @@ Transparent destroyed_by_op.
   simpl; intros. destruct H2. unfold rs1; Simplifs.
 (* shrximm *)
   apply SAME. eapply mk_shrximm_correct; eauto.
-(* lea *)
-  exploit transl_addressing_mode_32_correct; eauto. intros EA.
+(* lea *) 
+  
+
+  admit. (*
+  exploit transl_addressing_mode_32_correct; eauto.  intros EA.
   TranslOp. rewrite nextinstr_inv; auto with asmgen. rewrite Pregmap.gss. rewrite normalize_addrmode_32_correct; auto.
-(* mullhs *)
+*)(* mullhs *)
   apply SAME. TranslOp. destruct H1. Simplifs.
 (* mullhu *)
   apply SAME. TranslOp. destruct H1. Simplifs.
@@ -1465,7 +1468,7 @@ Transparent destroyed_by_op.
 (* selection *)
   rewrite EQ1. exploit transl_sel_correct; eauto. intros (rs' & A & B & C).
   exists rs'; split. eexact A. eauto.
-Qed.
+Admitted.
 
 (** Translation of memory loads. *)
 
@@ -1542,5 +1545,5 @@ Proof.
   apply exec_straight_one. simpl. unfold exec_store. rewrite H1. eauto. auto.
   intros. Simplifs.
 Qed.
-*)
+
 End CONSTRUCTORS.

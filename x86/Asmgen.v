@@ -462,8 +462,8 @@ Definition transl_op
       do r <- ireg_of res;
       match addr, args with 
       | Aindexed n, a1 :: nil => 
-        if Machregs.mreg_eq a1 res then 
-          OK (Paddl_ri r (Int.repr n) :: k)
+        if Machregs.mreg_eq a1 res 
+        then OK (Paddl_ri r (Int.repr n) :: k)
         else
           do am <- transl_addressing addr args; 
           OK (Pleal r (normalize_addrmode_32 am) :: k)

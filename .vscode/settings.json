@@ -36,7 +36,7 @@
         "compcert.ini": true,
         "compcert.config": true,
         "x86/ConstpropOp.v": true,
-        "x86/SelectOp.v": true,
+        "x86/SelectOp.v": false,
         "x86/SelectLong.v": true,
         "powerpc/ConstpropOp.v": true,
         "powerpc/SelectOp.v": true,

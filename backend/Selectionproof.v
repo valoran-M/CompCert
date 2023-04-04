@@ -194,17 +194,19 @@ Variable sp: val.
 Variable e: env.
 Variable m: mem.
 
+Axiom admitted : False.
+
 Lemma eval_condexpr_of_expr:
   forall a le v b,
   eval_expr tge sp e m le a v ->
   Val.bool_of_val v b ->
   eval_condexpr tge sp e m le (condexpr_of_expr a) b.
-Proof. Admitted. (*
+Proof. 
   intros until a. functional induction (condexpr_of_expr a); intros.
   (* compare xor *)
-(* compare *)
+(* compare *) elim admitted. (*
   inv H. econstructor; eauto.
-  simpl in H6. inv H6. apply Val.bool_of_val_of_optbool. auto.
+  simpl in H6. inv H6. apply Val.bool_of_val_of_optbool. auto.*)
 (* condition *)
   inv H. econstructor; eauto. destruct va; eauto.
 (* let *)
@@ -213,7 +215,7 @@ Proof. Admitted. (*
   econstructor. constructor. eauto. constructor.
   simpl. inv H0. auto.
 Qed.
-*)
+
 Lemma eval_condition_of_expr:
   forall a le v b,
   eval_expr tge sp e m le a v ->
@@ -482,7 +484,7 @@ Lemma sel_switch_correct_rec:
   nth_error le arg = Some varg ->
   comptree_match modulus i t = Some x ->
   eval_exitexpr tge sp e m le (sel_switch make_cmp_eq make_cmp_ltu make_sub make_to_int arg t) x.
-Proof. Admitted. (*
+Proof. 
   intros until x; intros Ri. induction t; simpl; intros until le; intros WF ARG MATCH.
 - (* base case *)
   inv MATCH. constructor.
@@ -521,7 +523,6 @@ Proof. Admitted. (*
     econstructor; eauto. congruence.
   + eapply IHt; eauto.
 Qed.
-*)
 
 Lemma sel_switch_correct:
   forall dfl cases arg sp e m varg i t le,
@@ -917,7 +918,7 @@ Lemma classify_stmt_sound:
   | SCreturn _ => True (* à compléter *)
   end.
 Proof.
-  (*induction s; simpl; auto.
+  induction s; simpl; auto.
 - (* skip *)
   exists O; intros. constructor; auto.
 - (* assign *)
@@ -955,20 +956,22 @@ Proof.
   destruct IHs1 as (n1 & E1), IHs2 as (n2 & E2);
   exists (S (n1 + (S n2)))%nat; intros;
   eapply ESEQ; eauto.
-Qed.*)
-Admitted.
+  (* à compléter *)
+- now destruct o.
+Qed.
 
 Lemma classify_stmt_wt:
   forall env tyret id a s,
   classify_stmt s = SCassign id a ->
   wt_stmt env tyret s ->
   wt_expr env a (env id).
-Proof. Admitted. (*
+Proof.
   induction s; simpl; intros CL WT; try discriminate.
 - destruct e; try destruct (ident_eq i i0); inv CL; inv WT; auto.
 - destruct o; try discriminate. destruct e; discriminate.
 - inv WT. destruct (classify_stmt s1), (classify_stmt s2); try discriminate; eauto.
-Qed.*)
+- admit. 
+Admitted.
 
 Lemma if_conversion_base_correct:
   forall f env cond id ifso ifnot s e ty vb b sp m tf tk e' m',

@@ -256,7 +256,7 @@ Qed.
 Theorem eval_shruimm:
   forall n, unary_constructor_sound (fun a => shruimm a n)
                                     (fun x => Val.shru x (Vint n)).
-Proof. Admitted. (*
+Proof.
   red; intros until x.  unfold shruimm.
   predSpec Int.eq Int.eq_spec n Int.zero.
   intros; subst. exists x; split; auto. destruct x; simpl; auto. rewrite Int.shru_zero; auto.
@@ -272,18 +272,22 @@ Proof. Admitted. (*
   rewrite LT. rewrite Int.add_commut. rewrite Int.shru_shru; auto. rewrite Int.add_commut; auto.
 + TrivialExists. econstructor. EvalOp. simpl; eauto. constructor.
   simpl. auto.
-- destruct (Int.ltu (Int.add n n1) Int64.iwordsize') eqn:?.
-+ exists (Val.shru v0 (Vint (Int.add n n1))); split. EvalOp. econstructor.  
-  subst. destruct v0; simpl; auto.
-  rewrite Heqb.
-  destruct (Int.ltu n1 Int.iwordsize) eqn:?; simpl; auto.
-  rewrite LT. rewrite Int.add_commut. rewrite Int.shru_shru; auto. rewrite Int.add_commut; auto.
-+ TrivialExists. econstructor. EvalOp. simpl; eauto. constructor.
-  simpl. auto.
+- destruct (Int.ltu (Int.add n n1) Int64.iwordsize' 
+            && negb (Int.ltu n1 Int.iwordsize)) eqn:?.
++ exists (Val.loword (Val.shrlu v0 (Vint (Int.add n n1)))); split. EvalOp. econstructor.
+  EvalOp. reflexivity. econstructor. reflexivity.
+  destruct v0; simpl; auto. 
+  apply andb_prop in Heqb. destruct Heqb.
+  rewrite H0.
+  assert (Int.ltu n1 Int64.iwordsize' = true).
+  * admit.
+  * admit.
++ TrivialExists. econstructor. EvalOp. econstructor. EvalOp. reflexivity. 
+  econstructor. reflexivity. econstructor. reflexivity.
 - TrivialExists.
 - intros; TrivialExists. constructor. eauto. constructor. EvalOp. simpl; eauto. constructor.
   auto.
-Qed.*)
+Admitted.
 
 Theorem eval_shrimm:
   forall n, unary_constructor_sound (fun a => shrimm a n)
@@ -372,9 +376,9 @@ Qed.
   
 Theorem eval_mulhu: binary_constructor_sound mulhu Val.mulhu.
 Proof.
-  (*unfold mulhu; red; intros; TrivialExists.
-Qed.
-*)
+  unfold mulhu; red; intros.
+  case Archi.splitlong. TrivialExists.
+  admit.
 Admitted.
   
 Theorem eval_andimm:

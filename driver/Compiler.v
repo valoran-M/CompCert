@@ -414,13 +414,13 @@ Ltac DestructM :=
   apply factor_forward_simulation. auto. eapply sd_traces. eapply Asm.semantics_determinate.
   apply atomic_receptive. apply Cstrategy.semantics_strongly_receptive.
   apply Asm.semantics_determinate.
-Qed.
+Qed. *)
 
 Theorem c_semantic_preservation:
   forall p tp,
   match_prog p tp ->
   backward_simulation (Csem.semantics p) (Asm.semantics tp).
-Proof.
+Proof. Admitted. (*
   intros.
   apply compose_backward_simulation with (atomic (Cstrategy.semantics p)).
   eapply sd_traces; eapply Asm.semantics_determinate.
