@@ -374,7 +374,10 @@ Proof.
   intros; unfold mullimm_base. red; intros.
   generalize (Int64.one_bits'_decomp n); intros D.
   destruct (Int64.one_bits' n) as [ | i [ | j [ | ? ? ]]] eqn:B.
-- TrivialExists.
+- destruct (short_imm n). TrivialExists.
+  exists (Val.mull x (Vlong n)). split.
+  apply eval_Eop with (vl := x :: Vlong n :: nil); eauto with evalexpr.
+  apply Val.lessdef_refl.
 - replace (Val.mull x (Vlong n)) with (Val.shll x (Vint i)).
   apply eval_shllimm; auto.
   simpl in D. rewrite D, Int64.add_zero. destruct x; simpl; auto.
@@ -392,7 +395,11 @@ Proof.
   rewrite (Int64.one_bits'_range n) in B2 by (rewrite B; auto with coqlib).
   inv B1; inv B2. simpl in B3; inv B3.
   rewrite Int64.mul_add_distr_r. rewrite <- ! Int64.shl'_mul. auto.
-- TrivialExists.
+(* Admitted. *)
+- case short_imm. TrivialExists.
+  exists (Val.mull x (Vlong n)). split. EvalOp. econstructor. eauto.
+  econstructor. EvalOp. reflexivity. econstructor; reflexivity.
+  simpl. eauto. eauto.
 Qed.
 
 Theorem eval_mullimm: forall n, unary_constructor_sound (mullimm n) (fun v => Val.mull v (Vlong n)).

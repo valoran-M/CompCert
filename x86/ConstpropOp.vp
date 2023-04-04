@@ -313,15 +313,21 @@ Definition make_shrluimm (n: int) (r1 r2: reg) :=
   else if Int.ltu n Int64.iwordsize' then (Oshrluimm n, r1 :: nil)
   else (Oshrlu, r1 :: r2 :: nil).
 
-Definition make_mullimm (n: int64) (r: reg) :=
+Definition short_imm (n: int64) := 
+  andb (Int64.lt n (Int64.repr Int.max_signed)) 
+    (negb (Int64.lt n (Int64.repr Int.min_signed))).
+
+Definition make_mullimm (n: int64) (r1 r2: reg) :=
   if Int64.eq n Int64.zero then
     (Olongconst Int64.zero, nil)
   else if Int64.eq n Int64.one then
-    (Omove, r :: nil)
+    (Omove, r1 :: nil)
   else
     match Int64.is_power2' n with
-    | Some l => (Oshllimm l, r :: nil)
-    | None => (Omullimm n, r :: nil)
+    | Some l => (Oshllimm l, r1 :: nil)
+    | None => if short_imm n 
+              then (Omullimm n, r1 :: nil)
+              else (Omull, r1 :: r2 :: nil)
     end.
 
 Definition make_andlimm (n: int64) (r: reg) (a: aval) :=
@@ -405,8 +411,8 @@ Nondetfunction op_strength_reduction
       let (addr', args') := addr_strength_reduction_32 addr args vl in
       (Olea addr', args')
   | Osubl, r1 :: r2 :: nil, v1 :: L n2 :: nil => make_addlimm (Int64.neg n2) r1
-  | Omull, r1 :: r2 :: nil, L n1 :: v2 :: nil => make_mullimm n1 r2
-  | Omull, r1 :: r2 :: nil, v1 :: L n2 :: nil => make_mullimm n2 r1
+  | Omull, r1 :: r2 :: nil, L n1 :: v2 :: nil => make_mullimm n1 r2 r1
+  | Omull, r1 :: r2 :: nil, v1 :: L n2 :: nil => make_mullimm n2 r1 r2
   | Odivl, r1 :: r2 :: nil, v1 :: L n2 :: nil => make_divlimm n2 r1 r2
   | Odivlu, r1 :: r2 :: nil, v1 :: L n2 :: nil => make_divluimm n2 r1 r2
   | Omodlu, r1 :: r2 :: nil, v1 :: L n2 :: nil => make_modluimm n2 r1 r2
