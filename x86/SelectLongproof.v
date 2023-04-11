@@ -395,7 +395,6 @@ Proof.
   rewrite (Int64.one_bits'_range n) in B2 by (rewrite B; auto with coqlib).
   inv B1; inv B2. simpl in B3; inv B3.
   rewrite Int64.mul_add_distr_r. rewrite <- ! Int64.shl'_mul. auto.
-(* Admitted. *)
 - case short_imm. TrivialExists.
   exists (Val.mull x (Vlong n)). split. EvalOp. econstructor. eauto.
   econstructor. EvalOp. reflexivity. econstructor; reflexivity.
